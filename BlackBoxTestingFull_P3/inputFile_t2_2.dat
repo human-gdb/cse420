@@ -1,0 +1,9 @@
+replace/extra_files/man-pages-master/man-pages-master/man1 .so
+replace/extra_files/man-pages-master/man-pages-master/man2 .so
+replace/extra_files/man-pages-master/man-pages-master/man3 .so
+replace/extra_files/man-pages-master/man-pages-master/man4 .so
+replace/extra_files/man-pages-master/man-pages-master/man5 .so
+replace/extra_files/man-pages-master/man-pages-master/man6 .so
+replace/extra_files/man-pages-master/man-pages-master/man7 .so
+replace/extra_files/man-pages-master/man-pages-master/man8 .so
+replace/extra_files/man-pages-master/man-pages-master/scripts .so

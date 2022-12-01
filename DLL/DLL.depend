@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1642540756 source:/home/alex/CSE-420-projects/DLL/main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<errno.h>
+

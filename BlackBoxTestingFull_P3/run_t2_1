@@ -1,0 +1,15 @@
+#Program to run multple clients which parse MANY files.
+./server 10 10 &
+sleep 2
+./client 10 inputFile_t2_1.txt &
+sleep 1
+./client 10 inputFile_t2_2.txt &
+sleep 1
+./client 10 inputFile_t2_3.txt &
+sleep 1
+./client 10 inputFile_t2_4.txt &
+sleep 1
+./client 10 inputFile_t2_5.txt &
+sleep 5
+./client 10 exitFile.dat
+

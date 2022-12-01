@@ -1,0 +1,728 @@
+.\" Copyright (C) 2015 Serge Hallyn <serge@hallyn.com>
+.\" and Copyright (C) 2016 Michael Kerrisk <mtk.manpages@gmail.com>
+.\"
+.\" %%%LICENSE_START(VERBATIM)
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\"
+.\" Since the Linux kernel and libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\"
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\" %%%LICENSE_END
+.\"
+.TH CGROUPS 7 2016-12-12 "Linux" "Linux Programmer's Manual"
+.SH NAME
+cgroups \- Linux control groups
+.SH DESCRIPTION
+Control cgroups, usually referred to as cgroups,
+are a Linux kernel feature which allow processes to
+be organized into hierarchical groups whose usage of
+various types of resources can then be limited and monitored.
+The kernel's cgroup interface is provided through
+a pseudo-filesystem called cgroupfs.
+Grouping is implemented in the core cgroup kernel code,
+while resource tracking and limits are implemented in
+a set of per-resource-type subsystems (memory, CPU, and so on).
+.\"
+.SS Terminology
+A
+.I cgroup
+is a collection of processes that are bound to a set of
+limits or parameters defined via the cgroup filesystem.
+
+A
+.I subsystem
+is a kernel component that modifies the behavior of
+the processes in a cgroup.
+Various subsystems have been implemented, making it possible to do things
+such as limiting the amount of CPU time and memory available to a cgroup,
+accounting for the CPU time used by a cgroup,
+and freezing and resuming execution of the processes in a cgroup.
+Subsystems are sometimes also known as
+.IR "resource controllers"
+(or simply, controllers).
+
+The cgroups for a controller are arranged in a
+.IR hierarchy .
+This hierarchy is defined by creating, removing, and
+renaming subdirectories within the cgroup filesystem.
+At each level of the hierarchy, attributes (e.g., limits) can be defined.
+The limits, control, and accounting provided by cgroups generally have
+effect throughout the subhierarchy underneath the cgroup where the
+attributes are defined.
+Thus, for example, the limits placed on
+a cgroup at a higher level in the hierarchy cannot be exceeded
+by descendant cgroups.
+.\"
+.SS Cgroups version 1 and version 2
+The initial release of the cgroups implementation was in Linux 2.6.24.
+Over time, various cgroup controllers have been added
+to allow the management of various types of resources.
+However, the development of these controllers was largely uncoordinated,
+with the result that many inconsistencies arose between controllers
+and management of the cgroup hierarchies became rather complex.
+(A longer description of these problems can be found in
+the kernel source file
+.IR Documentation/cgroup\-v2.txt .)
+
+Because of the problems with the initial cgroups implementation
+(cgroups version 1),
+starting in Linux 3.10, work began on a new,
+orthogonal implementation to remedy these problems.
+Initially marked experimental, and hidden behind the
+.I "\-o\ __DEVEL__sane_behavior"
+mount option, the new version (cgroups version 2)
+was eventually made official with the release of Linux 4.5.
+Differences between the two versions are described in the text below.
+
+Although cgroups v2 is intended as a replacement for cgroups v1,
+the older system continues to exist
+(and for compatibility reasons is unlikely to be removed).
+Currently, cgroups v2 implements only a subset of the controllers
+available in cgroups v1.
+The two systems are implemented so that both v1 controllers and
+v2 controllers can be mounted on the same system.
+Thus, for example, it is possible to use those controllers
+that are supported under version 2,
+while also using version 1 controllers
+where version 2 does not yet support those controllers.
+The only restriction here is that a controller can't be simultaneously
+employed in both a cgroups v1 hierarchy and in the cgroups v2 hierarchy.
+.\"
+.SS Cgroups version 1
+Under cgroups v1, each controller may be mounted against a separate
+cgroup filesystem that provides its own hierarchical organization of the
+processes on the system.
+It is also possible comount multiple (or even all) cgroups v1 controllers
+against the same cgroup filesystem, meaning that the comounted controllers
+manage the same hierarchical organization of processes.
+
+For each mounted hierarchy,
+the directory tree mirrors the control group hierarchy.
+Each control group is represented by a directory, with each of its child
+control cgroups represented as a child directory.
+For instance,
+.IR /user/joe/1.session
+represents control group
+.IR 1.session ,
+which is a child of cgroup
+.IR joe ,
+which is a child of
+.IR /user .
+Under each cgroup directory is a set of files which can be read or
+written to, reflecting resource limits and a few general cgroup
+properties.
+
+In addition, in cgroups v1,
+cgroups can be mounted with no bound controller, in which case
+they serve only to track processes.
+(See the discussion of release notification below.)
+An example of this is the
+.I name=systemd
+cgroup which is used by
+.BR systemd (1)
+to track services and user sessions.
+.\"
+.SS Tasks (threads) versus processes
+In cgroups v1, a distinction is drawn between
+.I processes
+and
+.IR tasks .
+In this view, a process can consist of multiple tasks
+(more commonly called threads, from a user-space perspective,
+and called such in the remainder of this man page).
+In cgroups v1, it is possible to independently manipulate
+the cgroup memberships of the threads in a process.
+Because this ability caused certain problems,
+.\" FIXME Add some text describing why this was a problem.
+the ability to independently manipulate the cgroup memberships
+of the threads in a process has been removed in cgroups v2.
+Cgroups v2 allows manipulation of cgroup membership only for processes
+(which has the effect of changing the cgroup membership of
+all threads in the process).
+.\"
+.SS Mounting v1 controllers
+The use of cgroups requires a kernel built with the
+.BR CONFIG_CGROUP
+option.
+In addition, each of the v1 controllers has an associated
+configuration option that must be set in order to employ that controller.
+
+In order to use a v1 controller,
+it must be mounted against a cgroup filesystem.
+The usual place for such mounts is under a
+.BR tmpfs (5)
+filesystem mounted at
+.IR /sys/fs/cgroup .
+Thus, one might mount the
+.I cpu
+controller as follows:
+
+.nf
+.in +4n
+mount \-t cgroup \-o cpu none /sys/fs/cgroup/cpu
+.in
+.fi
+
+It is possible to comount multiple controllers against the same hierarchy.
+For example, here the
+.IR cpu
+and
+.IR cpuacct
+controllers are comounted against a single hierarchy:
+
+.nf
+.in +4n
+mount \-t cgroup \-o cpu,cpuacct none /sys/fs/cgroup/cpu,cpuacct
+.in
+.fi
+
+Comounting controllers has the effect that a process is in the same cgroup for
+all of the comounted controllers.
+Separately mounting controllers allows a process to
+be in cgroup
+.I /foo1
+for one controller while being in
+.I /foo2/foo3
+for another.
+
+It is possible to comount all v1 controllers against the same hierarchy:
+
+.nf
+.in +4n
+mount \-t cgroup \-o all cgroup /sys/fs/cgroup
+.in
+.fi
+
+(One can achieve the same result by omitting
+.IR "\-o all" ,
+since it is the default if no controllers are explicitly specified.)
+
+It is not possible to mount the same controller
+against multiple cgroup hierarchies.
+For example, it is not possible to mount both the
+.I cpu
+and
+.I cpuacct
+controllers against one hierarchy, and to mount the
+.I cpu
+controller alone against another hierarchy.
+It is possible to create multiple mount points with exactly
+the same set of comounted controllers.
+However, in this case all that results is multiple mount points
+providing a view of the same hierarchy.
+
+Note that on many systems, the v1 controllers are automatically mounted under
+.IR /sys/fs/cgroup ;
+in particular,
+.BR systemd (1)
+automatically creates such mount points.
+.\"
+.SS Cgroups version 1 controllers
+Each of the cgroups version 1 controllers is governed
+by a kernel configuration option (listed below).
+Additionally, the availability of the cgroups feature is governed by the
+.BR CONFIG_CGROUPS
+kernel configuration option.
+.TP
+.IR cpu " (since Linux 2.6.24; " \fBCONFIG_CGROUP_SCHED\fP )
+Cgroups can be guaranteed a minimum number of "CPU shares"
+when a system is busy.
+This does not limit a cgroup's CPU usage if the CPUs are not busy.
+For further information, see
+.IR Documentation/scheduler/sched-design-CFS.txt .
+
+In Linux 3.2,
+this controller was extended to provide CPU "bandwidth" control.
+If the kernel is configured with
+.BR CONFIG_CFS_BANDWIDTH ,
+then within each scheduling period
+(defined via a file in the cgroup directory), it is possible to define
+an upper limit on the CPU time allocated to the processes in a cgroup.
+This upper limit applies even if there is no other competition for the CPU.
+Further information can be found in the kernel source file
+.IR Documentation/scheduler/sched\-bwc.txt .
+.TP
+.IR cpuacct " (since Linux 2.6.24; " \fBCONFIG_CGROUP_CPUACCT\fP )
+This provides accounting for CPU usage by groups of processes.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup\-v1/cpuacct.txt .
+.TP
+.IR cpuset " (since Linux 2.6.24; " \fBCONFIG_CPUSETS\fP )
+This cgroup can be used to bind the processes in a cgroup to
+a specified set of CPUs and NUMA nodes.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup\-v1/cpusets.txt .
+.TP
+.IR memory " (since Linux 2.6.25; " \fBCONFIG_MEMCG\fP )
+The memory controller supports reporting and limiting of process memory, kernel
+memory, and swap used by cgroups.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup\-v1/memory.txt .
+.TP
+.IR devices " (since Linux 2.6.26; " \fBCONFIG_CGROUP_DEVICE\fP )
+This supports controlling which processes may create (mknod) devices as
+well as open them for reading or writing.
+The policies may be specified as whitelists and blacklists.
+Hierarchy is enforced, so new rules must not
+violate existing rules for the target or ancestor cgroups.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/devices.txt .
+.TP
+.IR freezer " (since Linux 2.6.28; " \fBCONFIG_CGROUP_FREEZER\fP )
+The
+.IR freezer
+cgroup can suspend and restore (resume) all processes in a cgroup.
+Freezing a cgroup
+.I /A
+also causes its children, for example, processes in
+.IR /A/B ,
+to be frozen.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/freezer-subsystem.txt .
+.TP
+.IR net_cls " (since Linux 2.6.29; " \fBCONFIG_CGROUP_NET_CLASSID\fP )
+This places a classid, specified for the cgroup, on network packets
+created by a cgroup.
+These classids can then be used in firewall rules,
+as well as used to shape traffic using
+.BR tc (8).
+This applies only to packets
+leaving the cgroup, not to traffic arriving at the cgroup.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/net_cls.txt .
+.TP
+.IR blkio " (since Linux 2.6.33; " \fBCONFIG_BLK_CGROUP\fP )
+The
+.I blkio
+cgroup controls and limits access to specified block devices by
+applying IO control in the form of throttling and upper limits against leaf
+nodes and intermediate nodes in the storage hierarchy.
+
+Two policies are available.
+The first is a proportional-weight time-based division
+of disk implemented with CFQ.
+This is in effect for leaf nodes using CFQ.
+The second is a throttling policy which specifies
+upper I/O rate limits on a device.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/blkio-controller.txt .
+.TP
+.IR perf_event " (since Linux 2.6.39; " \fBCONFIG_CGROUP_PERF\fP )
+This controller allows
+.I perf
+monitoring of the set of processes grouped in a cgroup.
+
+Further information can be found in the kernel source file
+.IR tools/perf/Documentation/perf-record.txt .
+.TP
+.IR net_prio " (since Linux 3.3; " \fBCONFIG_CGROUP_NET_PRIO\fP )
+This allows priorities to be specified, per network interface, for cgroups.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/net_prio.txt .
+.TP
+.IR hugetlb " (since Linux 3.5; " \fBCONFIG_CGROUP_HUGETLB\fP )
+This supports limiting the use of huge pages by cgroups.
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/hugetlb.txt .
+.TP
+.IR pids " (since Linux 4.3; " \fBCONFIG_CGROUP_PIDS\fP )
+This controller permits limiting the number of process that may be created
+in a cgroup (and its descendants).
+
+Further information can be found in the kernel source file
+.IR Documentation/cgroup-v1/pids.txt .
+.\"
+.SS Creating cgroups and moving processes
+A cgroup filesystem initially contains a single root cgroup, '/',
+which all processes belong to.
+A new cgroup is created by creating a directory in the cgroup filesystem:
+
+    mkdir /sys/fs/cgroup/cpu/cg1
+
+This creates a new empty cgroup.
+
+A process may be moved to this cgroup by writing its PID into the cgroup's
+.I cgroup.procs
+file:
+
+    echo $$ > /sys/fs/cgroup/cpu/cg1/cgroup.procs
+
+Only one PID at a time should be written to this file.
+
+Writing the value 0 to a
+.IR cgroup.procs
+file causes the writing process to be moved to the corresponding cgroup.
+
+When writing a PID into the
+.IR cgroup.procs ,
+all threads in the process are moved into the new cgroup at once.
+
+Within a hierarchy, a process can be a member of exactly one cgroup.
+Writing a process's PID to a
+.IR cgroup.procs
+file automatically removes it from the cgroup of
+which it was previously a member.
+
+The
+.I cgroup.procs
+file can be read to obtain a list of the processes that are
+members of a cgroup.
+The returned list of PIDs is not guaranteed to be in order.
+Nor is it guaranteed to be free of duplicates.
+(For example, a PID may be recycled while reading from the list.)
+
+In cgroups v1 (but not cgroups v2), an individual thread can be moved to
+another cgroup by writing its thread ID
+(i.e., the kernel thread ID returned by
+.BR clone (2)
+and
+.BR gettid (2))
+to the
+.IR tasks
+file in a cgroup directory.
+This file can be read to discover the set of threads
+that are members of the cgroup.
+This file is not present in cgroup v2 directories.
+.\"
+.SS Removing cgroups
+To remove a cgroup,
+it must first have no child cgroups and contain no (nonzombie) processes.
+So long as that is the case, one can simply
+remove the corresponding directory pathname.
+Note that files in a cgroup directory cannot and need not be
+removed.
+.\"
+.SS Cgroups v1 release notification
+Two files can be used to determine whether the kernel provides
+notifications when a cgroup becomes empty.
+A cgroup is considered to be empty when it contains no child
+cgroups and no member processes.
+
+A special file in the root directory of each cgroup hierarchy,
+.IR release_agent ,
+can be used to register the pathname of a program that may be invoked when
+a cgroup in the hierarchy becomes empty.
+The pathname of the newly empty cgroup (relative to the cgroup mount point)
+is provided as the sole command-line argument when the
+.IR release_agent
+program is invoked.
+The
+.IR release_agent
+program might remove the cgroup directory,
+or perhaps repopulate with a process.
+
+The default value of the
+.IR release_agent
+file is empty, meaning that no release agent is invoked.
+
+Whether or not the
+.IR release_agent
+program is invoked when a particular cgroup becomes empty is determined
+by the value in the
+.IR notify_on_release
+file in the corresponding cgroup directory.
+If this file contains the value 0, then the
+.IR release_agent
+program is not invoked.
+If it contains the value 1, the
+.IR release_agent
+program is invoked.
+The default value for this file in the root cgroup is 0.
+At the time when a new cgroup is created,
+the value in this file is inherited from the corresponding file
+in the parent cgroup.
+.\"
+.SS Cgroups version 2
+In cgroups v2,
+all mounted controllers reside in a single unified hierarchy.
+While (different) controllers may be simultaneously
+mounted under the v1 and v2 hierarchies,
+it is not possible to mount the same controller simultaneously
+under both the v1 and the v2 hierarchies.
+
+The new behaviors in cgroups v2 are summarized here,
+and in some cases elaborated in the following subsections.
+.IP 1. 3
+Cgroups v2 provides a unified hierarchy against
+which all controllers are mounted.
+.IP 2.
+"Internal" processes are not permitted.
+With the exception of the root cgroup, processes may reside
+only in leaf nodes (cgroups that do not themselves contain child cgroups).
+.IP 3.
+Active cgroups must be specified via the files
+.IR cgroup.controllers
+and
+.IR cgroup.subtree_control .
+.IP 4.
+The
+.I tasks
+file has been removed.
+In addition, the
+.I cgroup.clone_children
+file that is employed by the
+.I cpuset
+controller has been removed.
+.IP 5.
+An improved mechanism for notification of empty cgroups is provided by the
+.IR cgroup.events
+file.
+.PP
+For more changes, see the
+.I Documentation/cgroup-v2.txt
+file in the kernel source.
+.\"
+.SS Cgroups v2 unified hierarchy
+In cgroups v1, the ability to mount different controllers
+against different hierarchies was intended to allow great flexibility
+for application design.
+In practice, though, the flexibility turned out to less useful than expected,
+and in many cases added complexity.
+Therefore, in cgroups v2,
+all available controllers are mounted against a single hierarchy.
+The available controllers are automatically mounted,
+meaning that it is not necessary (or possible) to specify the controllers
+when mounting the cgroup v2 filesystem using a command such as the following:
+
+    mount -t cgroup2 none /mnt/cgroup2
+
+A cgroup v2 controller is available only if it is not currently in use
+via a mount against a cgroup v1 hierarchy.
+Or, to put things another way, it is not possible to employ
+the same controller against both a v1 hierarchy and the unified v2 hierarchy.
+.\"
+.SS Cgroups v2 """no internal processes""" rule
+With the exception of the root cgroup, processes may reside
+only in leaf nodes (cgroups that do not themselves contain child cgroups).
+This avoids the need to decide how to partition resources between
+processes which are members of cgroup A and processes in child cgroups of A.
+
+For instance, if cgroup
+.I /cg1/cg2
+exists, then a process may reside in
+.IR /cg1/cg2 ,
+but not in
+.IR /cg1 .
+This is to avoid an ambiguity in cgroups v1
+with respect to the delegation of resources between processes in
+.I /cg1
+and its child cgroups.
+The recommended approach in cgroups v2 is to create a subdirectory called
+.I leaf
+for any nonleaf cgroup which should contain processes, but no child cgroups.
+Thus, processes which previously would have gone into
+.I /cg1
+would now go into
+.IR /cg1/leaf .
+This has the advantage of making explicit
+the relationship between processes in
+.I /cg1/leaf
+and
+.IR /cg1 's
+other children.
+.\"
+.SS Cgroups v2 subtree control
+When a cgroup
+.I A/b
+is created, its
+.IR cgroup.controllers
+file contains the list of controllers which were active in its parent, A.
+This is the list of controllers which are available to this cgroup.
+No controllers are active until they are enabled through the
+.IR cgroup.subtree_control
+file, by writing the list of space-delimited names of the controllers,
+each preceded by '+' (to enable) or '\-' (to disable).
+If the
+.I freezer
+controller is not enabled in
+.IR /A/B ,
+then it cannot be enabled in
+.IR /A/B/C .
+.\"
+.SS Cgroups v2 cgroup.events file
+With cgroups v2, a new mechanism is provided to obtain notification
+about when a cgroup becomes empty.
+The cgroups v1
+.IR release_agent
+and
+.IR notify_on_release
+files are removed, and replaced by a new, more general-purpose file,
+.IR cgroup.events .
+This file contains key-value pairs
+(delimited by newline characters, with the key and value separated by spaces)
+that identify events or state for a cgroup.
+Currently, only one key appears in this file,
+.IR populated ,
+which has either the value 0,
+meaning that the cgroup (and its descendants)
+contain no (nonzombie) processes,
+or 1, meaning that the cgroup contains member processes.
+
+The
+.IR cgroup.events
+file can be monitored, in order to receive notification when a cgroup
+transitions between the populated and unpopulated states (or vice versa).
+When monitoring this file using
+.BR inotify (7),
+transitions generate
+.BR IN_MODIFY
+events, and when monitoring the file using
+.BR poll (2),
+transitions generate
+.B POLLPRI
+events.
+
+The cgroups v2
+.IR notify_on_release
+mechanism offers at least two advantages over the cgroups v1
+.IR release_agent
+mechanism.
+First, it allows for cheaper notification,
+since a single process can monitor multiple
+.IR cgroup.events
+files.
+By contrast, the cgroups v1 mechanism requires the creation
+of a process for each notification.
+Second, notification can be delegated to a process that lives inside
+a container associated with the newly empty cgroup.
+.\"
+.SS /proc files
+.TP
+.IR /proc/cgroups " (since Linux 2.6.24)"
+This file contains information about the controllers
+that are compiled into the kernel.
+An example of the contents of this file (reformatted for readability)
+is the following:
+
+.nf
+.in +4n
+#subsys_name    hierarchy      num_cgroups    enabled
+cpuset          4              1              1
+cpu             8              1              1
+cpuacct         8              1              1
+blkio           6              1              1
+memory          3              1              1
+devices         10             84             1
+freezer         7              1              1
+net_cls         9              1              1
+perf_event      5              1              1
+net_prio        9              1              1
+hugetlb         0              1              0
+pids            2              1              1
+.in
+.fi
+
+The fields in this file are, from left to right:
+.RS
+.IP 1. 3
+The name of the controller.
+.IP 2.
+The unique ID of the cgroup hierarchy on which this controller is mounted.
+If multiple cgroups v1 controllers are bound to the same hierarchy,
+then each will show the same hierarchy ID in this field.
+The value in this field will be 0 if:
+.RS 5
+.IP a) 3
+the controller is not mounted on a cgroups v1 hierarchy;
+.IP b)
+the controller is bound to the cgroups v2 single unified hierarchy; or
+.IP c)
+the controller is disabled (see below).
+.RE
+.IP 3.
+The number of control groups in this hierarchy using this controller.
+.IP 4.
+This field contains the value 1 if this controller is enabled,
+or 0 if it has been disabled (via the
+.IR cgroup_disable
+kernel command-line boot parameter).
+.RE
+.TP
+.IR /proc/[pid]/cgroup " (since Linux 2.6.24)"
+This file describes control groups to which the process
+with the corresponding PID belongs.
+The displayed information differs for
+cgroups version 1 and version 2 hierarchies.
+
+For each cgroup hierarchy of which the process is a member,
+there is one entry containing three
+colon-separated fields of the form:
+
+     hierarchy-ID:controller-list:cgroup-path
+
+For example:
+.nf
+.ft CW
+
+    5:cpuacct,cpu,cpuset:/daemons
+.ft
+.fi
+.IP
+The colon-separated fields are, from left to right:
+.RS
+.IP 1. 3
+For cgroups version 1 hierarchies,
+this field contains a unique hierarchy ID number
+that can be matched to a hierarchy ID in
+.IR /proc/cgroups .
+For the cgroups version 2 hierarchy, this field contains the value 0.
+.IP 2.
+For cgroups version 1 hierarchies,
+this field contains a comma-separated list of the controllers
+bound to the hierarchy.
+For the cgroups version 2 hierarchy, this field is empty.
+.IP 3.
+This field contains the pathname of the control group in the hierarchy
+to which the process belongs.
+This pathname is relative to the mount point of the hierarchy.
+.RE
+.SH ERRORS
+The following errors can occur for
+.BR mount (2):
+.TP
+.B EBUSY
+An attempt to mount a cgroup version 1 filesystem specified neither the
+.I name=
+option (to mount a named hierarchy) nor a controller name (or
+.IR all ).
+.SH NOTES
+A child process created via
+.BR fork (2)
+inherits its parent's cgroup memberships.
+A process's cgroup memberships are preserved across
+.BR execve (2).
+.SH SEE ALSO
+.BR prlimit (1),
+.BR systemd (1),
+.BR clone (2),
+.BR ioprio_set (2),
+.BR perf_event_open (2),
+.BR setrlimit (2),
+.BR cgroup_namespaces (7),
+.BR cpuset (7),
+.BR namespaces (7),
+.BR sched (7),
+.BR user_namespaces (7)

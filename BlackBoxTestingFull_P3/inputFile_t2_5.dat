@@ -1,0 +1,8 @@
+replace/extra_files/man-pages-master/man-pages-master/man2 priority
+replace/extra_files/man-pages-master/man-pages-master/man2 copy
+replace/extra_files/man-pages-master/man-pages-master/man2 NUMA
+replace/extra_files/man-pages-master/man-pages-master/man2 libaio
+replace/extra_files/man-pages-master/man-pages-master/man2 canceled
+replace/extra_files/man-pages-master/man-pages-master/man2 syscall
+replace/extra_files/man-pages-master/man-pages-master/man3 glibc
+replace/extra_files/man-pages-master/man-pages-master/man3 program

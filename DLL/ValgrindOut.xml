@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+
+<valgrindoutput>
+
+<protocolversion>4</protocolversion>
+<protocoltool>memcheck</protocoltool>
+
+<preamble>
+  <line>Memcheck, a memory error detector</line>
+  <line>Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.</line>
+  <line>Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info</line>
+  <line>Command: /home/alex/CSE-420-projects/DLL/bin/Debug/DLL</line>
+</preamble>
+
+<pid>7141</pid>
+<ppid>6831</ppid>
+<tool>memcheck</tool>
+
+<args>
+  <vargv>
+    <exe>/usr/bin/valgrind.bin</exe>
+    <arg>--leak-check=full</arg>
+    <arg>--track-origins=yes</arg>
+    <arg>--xml=yes</arg>
+    <arg>--xml-file=/home/alex/CSE-420-projects/DLL/ValgrindOut.xml</arg>
+  </vargv>
+  <argv>
+    <exe>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</exe>
+  </argv>
+</args>
+
+<status>
+  <state>RUNNING</state>
+  <time>00:00:00:00.038 </time>
+</status>
+
+<error>
+  <unique>0x0</unique>
+  <tid>1</tid>
+  <kind>UninitCondition</kind>
+  <what>Conditional jump or move depends on uninitialised value(s)</what>
+  <stack>
+    <frame>
+      <ip>0x1092B7</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>AddItem</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>45</line>
+    </frame>
+    <frame>
+      <ip>0x109413</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>main</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>88</line>
+    </frame>
+  </stack>
+  <auxwhat>Uninitialised value was created by a heap allocation</auxwhat>
+  <stack>
+    <frame>
+      <ip>0x483B7F3</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>malloc</fn>
+    </frame>
+    <frame>
+      <ip>0x1093E4</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>main</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>82</line>
+    </frame>
+  </stack>
+</error>
+
+<error>
+  <unique>0x1</unique>
+  <tid>1</tid>
+  <kind>UninitCondition</kind>
+  <what>Conditional jump or move depends on uninitialised value(s)</what>
+  <stack>
+    <frame>
+      <ip>0x1092F5</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>AddItem</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>51</line>
+    </frame>
+    <frame>
+      <ip>0x109413</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>main</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>88</line>
+    </frame>
+  </stack>
+  <auxwhat>Uninitialised value was created by a heap allocation</auxwhat>
+  <stack>
+    <frame>
+      <ip>0x483B7F3</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>malloc</fn>
+    </frame>
+    <frame>
+      <ip>0x1093E4</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>main</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>82</line>
+    </frame>
+  </stack>
+</error>
+
+
+<status>
+  <state>FINISHED</state>
+  <time>00:00:00:00.340 </time>
+</status>
+
+<error>
+  <unique>0x3</unique>
+  <tid>1</tid>
+  <kind>Leak_DefinitelyLost</kind>
+  <xwhat>
+    <text>136 (16 direct, 120 indirect) bytes in 1 blocks are definitely lost in loss record 2 of 2</text>
+    <leakedbytes>136</leakedbytes>
+    <leakedblocks>1</leakedblocks>
+  </xwhat>
+  <stack>
+    <frame>
+      <ip>0x483B7F3</ip>
+      <obj>/usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so</obj>
+      <fn>malloc</fn>
+    </frame>
+    <frame>
+      <ip>0x1093E4</ip>
+      <obj>/home/alex/CSE-420-projects/DLL/bin/Debug/DLL</obj>
+      <fn>main</fn>
+      <dir>/home/alex/CSE-420-projects/DLL</dir>
+      <file>main.c</file>
+      <line>82</line>
+    </frame>
+  </stack>
+</error>
+
+<errorcounts>
+  <pair>
+    <count>1</count>
+    <unique>0x1</unique>
+  </pair>
+  <pair>
+    <count>1</count>
+    <unique>0x0</unique>
+  </pair>
+</errorcounts>
+
+<suppcounts>
+</suppcounts>
+
+</valgrindoutput>
+
