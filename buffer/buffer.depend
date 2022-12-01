@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1648590420 source:/home/alex/cse420/buffer/buf.c
+	<stdio.h>
+	<unistd.h>
+	<stdlib.h>
+	<assert.h>
+	<pthread.h>
+	<semaphore.h>
+

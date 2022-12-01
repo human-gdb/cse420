@@ -1,0 +1,65 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <dirent.h>
+
+#define MAX_PATH_SIZE 256
+
+typedef struct Item Itemid fileWriter(SDLL*list,FILE* fp){
+    if(fp==NULL){
+        perror("Unable export output.txt");
+        exit(-1);
+    }
+    Node*node=list->head;
+    while(node != NULL){
+        fprintf(fp,"%d:%d:%s\n",node->item->level,node->item->num,node->item->path);
+        node=node->next;
+    }
+    fclose(fp);
+    free(node);
+}
+
+int main(int argc, char *argv[]){
+
+    char *testpath = malloc(256);
+    FILE *file;
+
+    if(argc < 3){
+        strcpy( testpath,"BlackBoxTesting/files/final-src");
+        file   = fopen("output.txt","w");
+    }
+    else{
+        strcpy(testpath,argv[1]);
+        file   = fopen(argv[2],"w");
+    }
+
+    SDLL *mylist = malloc(sizeof(struct SDLL));
+    mylist->head = NULL;
+    mylist->tail = NULL;
+    mylist->size = 0;
+
+
+
+    //printf("\n\nRaw Directory paths\n\n");
+    printDir(testpath,mylist,1);
+
+    //printf("\n\nMy Doubly linked list\n\n");
+    //printSDLL(mylist);
+
+    SortChildren(mylist);
+    NumberChildren(mylist);
+
+    //printf("\n\nSorted Doubly linked list\n\n");
+    //printSDLL(mylist);
+
+    fileWriter(mylist,file);
+
+    if(argc==3) printf("\nStarting from Parent Directory:%s\n%s file has been exported with %d directories.\n\n",argv[1],argv[2],mylist->size);
+    else        printf("\nText file export successful with default directory, no args recieved.\n");
+
+
+    destroyList(mylist);free(testpath);
+    return 0;
+}

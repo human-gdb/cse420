@@ -1,0 +1,4 @@
+Alexander Rana: 	5243528 
+Daniel Maya Bonilla:	5317883
+
+I fully implemented everything. I initially wrote a full description of the program, but it turns out your test.sh file deletes every file in the directory, including README.txt. But never the less: I hard coded lseek to superblock and group descriptor table. SB gives the blocksize used, and GDT tells the block id for inode table. Then it lseek to root inode entry in inode table, which is always the second entry in table. After this my ReadDirBlock func reads the dirctories in given block. It recurses back to ReadDirBlock from ReadDirInode when it sees a Dir file type along the printing process. When in File read mode, it uses similar recursion but also utilizes the first indirect i_block pointer, instead of the only 12 direct ones. For more questions please feel free to contact me on Teams. Thanks.

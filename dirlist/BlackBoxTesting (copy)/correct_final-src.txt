@@ -1,0 +1,10 @@
+1:1:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src
+2:1:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/README.txt
+2:2:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap3
+2:3:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap4
+3:1:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap3/Simulator
+3:2:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap3/win32-pipe-parent.c
+3:3:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap4/Driver.java
+3:4:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap4/thrd-posix.c
+3:5:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap4/thrd-win32.c
+4:1:/home/alex/cse420/dirlist/BlackBoxTesting (copy)/files/final-src/chap3/Simulator/dup.c

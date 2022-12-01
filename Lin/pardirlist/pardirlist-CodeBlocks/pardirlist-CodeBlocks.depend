@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1645996918 source:/home/alex/cse420/Lin/pardirlist/pardirlist.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<errno.h>
+	<dirent.h>
+	<sys/stat.h>
+	<fcntl.h>
+	<pthread.h>
+
